@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "900632735940",
+    "project_id": "travel265app",
+    "storage_bucket": "travel265app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:900632735940:android:ab7afe748bd8ddbfc89991",
+        "android_client_info": {
+          "package_name": "com.travel265.travel265"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "900632735940-lsatnok1s6128ipefjii4bo1ppvl457n.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.travel265.travel265",
+            "certificate_hash": "740d3700bf8925726249c56387d3da26ac2ee03a"
+          }
+        },
+        {
+          "client_id": "900632735940-g3q2pkthj8av74aaicdli0mchqmb8ccc.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBXbT8v1N_9YkPV0w8VzhThpZKUdB6v8YA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "900632735940-g3q2pkthj8av74aaicdli0mchqmb8ccc.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "900632735940-8s5ujei3ipqa4fkh1pn1rpm9oobd831f.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.travel265.travel265"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
