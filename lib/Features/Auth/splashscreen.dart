@@ -1,21 +1,19 @@
-// lib/features/auth/splashscreen.dart
+// lib/features/auth/splashscreen.dart - REFINED
 
-// This screen shows a branded intro for 3 seconds, then moves to role selection.
-// It's the first screen users see — so it's designed to feel premium and smooth.
-
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:travel265/core/theme/app_theme.dart'; // Import theme and primaryColor
 import 'package:travel265/features/auth/role_selection_screen.dart';
-import '../../material.dart';
 
-// How long the splash screen stays visible before auto-advancing
-const Duration splashDuration = Duration(seconds: 3);
-
-// Delays for animations and interactions
-const Duration _kAnimationStartDelay = Duration(milliseconds: 200); // Logo appears quickly
-const Duration _kSkipButtonDelay = Duration(seconds: 1);           // "Skip" appears after 1s
-const Duration _kAnimationDuration = Duration(milliseconds: 800);   // Logo animation speed
-const Duration _kTransitionDuration = Duration(milliseconds: 400);  // Screen fade-out speed
+/// Splash screen animation durations
+class _SplashDurations {
+  static const splash = Duration(seconds: 3);
+  static const animationDelay = Duration(milliseconds: 200);
+  static const skipButtonDelay = Duration(seconds: 1);
+  static const animation = Duration(milliseconds: 800);
+  static const transition = Duration(milliseconds: 400);
+}
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -26,77 +24,52 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
-
-  // Animation controller for logo entrance
   late final AnimationController _controller;
-  late final Animation<double> _scale; // Logo grows from small to full size
-  late final Animation<double> _fade;  // Logo fades in
-
-  // UI state flags
-  bool _canSkip = false;       // Has the "Skip" button appeared?
-  bool _hasNavigated = false;  // Have we already gone to the next screen?
-  bool _isDisposed = false;    // Prevent actions after screen is closed
+  late final Animation<double> _scale;
+  late final Animation<double> _fade;
+  bool _canSkip = false;
+  bool _hasNavigated = false;
 
   @override
   void initState() {
     super.initState();
-    _initializeAnimations();
-    _scheduleAnimations();
-    _scheduleNavigation(); // Start 3-second timer
+    _setupAnimations();
+    _startTimers();
   }
 
-  void _initializeAnimations() {
+  void _setupAnimations() {
     _controller = AnimationController(
       vsync: this,
-      duration: _kAnimationDuration,
+      duration: _SplashDurations.animation,
     );
-
-    // Logo scales up with a "bounce" effect (easeOutBack)
     _scale = Tween<double>(begin: 0.3, end: 1.0).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeOutBack),
     );
-
-    // Logo fades in smoothly
     _fade = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
   }
 
-  void _scheduleAnimations() {
-    // Start logo animation after a short delay
-    Future.delayed(_kAnimationStartDelay, () {
-      if (mounted && !_isDisposed) _controller.forward();
+  void _startTimers() {
+    Future.delayed(_SplashDurations.animationDelay, () {
+      if (mounted) _controller.forward();
     });
-
-    // Show "Skip" button after 1 second
-    Future.delayed(_kSkipButtonDelay, () {
-      if (mounted && !_isDisposed) {
-        setState(() => _canSkip = true);
-      }
+    Future.delayed(_SplashDurations.skipButtonDelay, () {
+      if (mounted) setState(() => _canSkip = true);
     });
+    Future.delayed(_SplashDurations.splash, _navigate);
   }
 
-  void _scheduleNavigation() {
-    // After 3 seconds, go to next screen
-    Future.delayed(splashDuration, _navigate);
-  }
-
-  void _navigate() {
-    // Safety: only navigate once
-    if (_hasNavigated || _isDisposed || !mounted) return;
+  Future<void> _navigate() async {
+    if (_hasNavigated || !mounted) return;
     _hasNavigated = true;
+    if (_canSkip) HapticFeedback.lightImpact();
 
-    // Gentle vibration when skipping (optional polish)
-    if (_canSkip) {
-      HapticFeedback.lightImpact();
-    }
-
-    // Replace splash screen with RoleSelectionScreen (no back arrow)
-    Navigator.pushReplacement(
+    await Navigator.pushReplacement(
       context,
       PageRouteBuilder(
         pageBuilder: (_, __, ___) => const RoleSelectionScreen(),
-        transitionDuration: _kTransitionDuration,
+        transitionDuration: _SplashDurations.transition,
         transitionsBuilder: (_, animation, __, child) {
           return FadeTransition(opacity: animation, child: child);
         },
@@ -106,8 +79,7 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   void dispose() {
-    _isDisposed = true;
-    _controller.dispose(); // Free animation resources
+    _controller.dispose();
     super.dispose();
   }
 
@@ -116,16 +88,13 @@ class _SplashScreenState extends State<SplashScreen>
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    return WillPopScope(
-      // Prevent Android back button from exiting the app during splash
-      onWillPop: () async => false,
+    // TODO: Consider using Theme.of(context).extension<AppColors>()?.primary instead of importing primaryColor directly
+    return PopScope(
+      canPop: false, // Replaces deprecated WillPopScope
       child: Scaffold(
         backgroundColor: theme.scaffoldBackgroundColor,
         body: AnnotatedRegion<SystemUiOverlayStyle>(
-          // Adjust status bar icons: white in dark mode, black in light mode
-          value: isDark
-              ? SystemUiOverlayStyle.light
-              : SystemUiOverlayStyle.dark,
+          value: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
           child: SafeArea(
             child: Center(
               child: Padding(
@@ -133,92 +102,25 @@ class _SplashScreenState extends State<SplashScreen>
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Animated logo
                     ScaleTransition(
                       scale: _scale,
                       child: FadeTransition(
                         opacity: _fade,
-                        child: Container(
-                          width: 120,
-                          height: 120,
-                          decoration: BoxDecoration(
-                            gradient: RadialGradient(
-                              colors: [
-                                primaryColor.withOpacity(0.15),
-                                primaryColor.withOpacity(0.05),
-                              ],
-                            ),
-                            shape: BoxShape.circle,
-                            // Subtle shadow in light mode only
-                            boxShadow: [
-                              if (!isDark)
-                                BoxShadow(
-                                  color: primaryColor.withOpacity(0.1),
-                                  blurRadius: 10,
-                                  spreadRadius: 2,
-                                ),
-                            ],
-                          ),
-                          child: Semantics(
-                            label: 'App logo: Travel Explore',
-                            child: Icon(
-                              Icons.travel_explore,
-                              size: 60,
-                              color: primaryColor,
-                            ),
-                          ),
-                        ),
+                        child: _Logo(isDark: isDark),
                       ),
                     ),
                     const SizedBox(height: 32),
-
-                    // App name with bold styling
                     FadeTransition(
                       opacity: _fade,
-                      child: Text(
-                        "TRAVEL 265",
-                        style: theme.textTheme.displaySmall?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          color: isDark ? Colors.white : Colors.black87,
-                        ) ??
-                            const TextStyle(
-                              fontSize: 28,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.black87,
-                            ),
-                        semanticsLabel: "Travel 265",
-                      ),
+                      child: _Title(theme: theme, isDark: isDark),
                     ),
                     const SizedBox(height: 16),
-
-                    // Tagline explaining the app's purpose
                     FadeTransition(
                       opacity: _fade,
-                      child: Text(
-                        "Your trusted way to discover and book stays in Malawi",
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          color: isDark
-                              ? Colors.white70
-                              : Colors.grey[600],
-                          height: 1.4,
-                        ) ??
-                            const TextStyle(
-                              fontSize: 16,
-                              height: 1.4,
-                              color: Colors.grey,
-                            ),
-                        textAlign: TextAlign.center,
-                        semanticsLabel:
-                        "Your trusted way to discover and book stays in Malawi",
-                      ),
+                      child: _Tagline(theme: theme, isDark: isDark),
                     ),
                     const Spacer(),
-
-                    // Skip button (appears after 1 second)
-                    ExcludeSemantics(
-                      excluding: !_canSkip, // Hide from accessibility until visible
-                      child: _buildSkipButton(theme),
-                    ),
+                    _SkipButton(canSkip: _canSkip, onPressed: _navigate),
                   ],
                 ),
               ),
@@ -228,16 +130,97 @@ class _SplashScreenState extends State<SplashScreen>
       ),
     );
   }
+}
 
-  Widget _buildSkipButton(ThemeData theme) {
+// TODO: Extract to lib/core/widgets/brand_logo.dart for reuse
+class _Logo extends StatelessWidget {
+  final bool isDark;
+  const _Logo({required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 120,
+      height: 120,
+      decoration: BoxDecoration(
+        gradient: RadialGradient(
+          colors: [
+            primaryColor.withOpacity(0.15),
+            primaryColor.withOpacity(0.05),
+          ],
+        ),
+        shape: BoxShape.circle,
+        boxShadow: [
+          if (!isDark)
+            BoxShadow(
+              color: primaryColor.withOpacity(0.1),
+              blurRadius: 10,
+              spreadRadius: 2,
+            ),
+        ],
+      ),
+      child: Icon(
+        Icons.travel_explore,
+        size: 60,
+        color: primaryColor,
+        semanticLabel: 'Travel 265 logo',
+      ),
+    );
+  }
+}
+
+class _Title extends StatelessWidget {
+  final ThemeData theme;
+  final bool isDark;
+  const _Title({required this.theme, required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      "TRAVEL 265",
+      style: theme.textTheme.displaySmall?.copyWith(
+        fontWeight: FontWeight.w800,
+        color: isDark ? Colors.white : Colors.black87,
+      ),
+      semanticsLabel: "Travel 265",
+    );
+  }
+}
+
+class _Tagline extends StatelessWidget {
+  final ThemeData theme;
+  final bool isDark;
+  const _Tagline({required this.theme, required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      "Your trusted way to discover and book stays in Malawi",
+      style: theme.textTheme.bodyLarge?.copyWith(
+        color: isDark ? Colors.white70 : Colors.grey[600],
+        height: 1.4,
+      ),
+      textAlign: TextAlign.center,
+      semanticsLabel: "Your trusted way to discover and book stays in Malawi",
+    );
+  }
+}
+
+class _SkipButton extends StatelessWidget {
+  final bool canSkip;
+  final VoidCallback onPressed;
+  const _SkipButton({required this.canSkip, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
     return AnimatedOpacity(
-      opacity: _canSkip ? 1 : 0,
-      duration: _kTransitionDuration,
+      opacity: canSkip ? 1 : 0,
+      duration: _SplashDurations.transition,
       child: AnimatedScale(
-        scale: _canSkip ? 1.0 : 0.8,
-        duration: _kTransitionDuration,
+        scale: canSkip ? 1.0 : 0.8,
+        duration: _SplashDurations.transition,
         child: TextButton(
-          onPressed: _canSkip ? _navigate : null, // Disabled until ready
+          onPressed: canSkip ? onPressed : null,
           style: TextButton.styleFrom(
             foregroundColor: primaryColor,
             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),

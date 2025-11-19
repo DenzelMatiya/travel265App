@@ -1,9 +1,18 @@
-// lib/features/auth/host_register.dart
+// lib/features/auth/host_register.dart - REFINED
 
 import 'package:flutter/material.dart';
-import '../../material.dart';
-import '../services/auth_service.dart';
+import 'package:flutter/services.dart';
+import 'package:travel265/core/services/auth_service.dart';
+import 'package:travel265/core/theme/app_theme.dart';
+import 'package:logger/logger.dart';
 
+// TODO: Extract to core/utils/logger.dart
+final _logger = Logger(printer: PrettyPrinter(methodCount: 0));
+
+/// Host registration screen using magic link authentication.
+///
+/// Allows new hosts to register with their email address. A magic link
+/// is sent to their inbox for passwordless authentication.
 class HostRegisterScreen extends StatefulWidget {
   const HostRegisterScreen({super.key});
 
@@ -14,18 +23,17 @@ class HostRegisterScreen extends StatefulWidget {
 class _HostRegisterScreenState extends State<HostRegisterScreen> {
   final _emailController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  final _emailFocusNode = FocusNode(); // Auto-focus
-  bool _isSending = false;
-  String? _errorMessage;
+  final _emailFocusNode = FocusNode();
+
+  bool _isLoading = false;
+  String? _emailError;
 
   @override
   void initState() {
     super.initState();
-    // Auto-focus email field after screen loads
+    // Focus email field automatically
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        FocusScope.of(context).requestFocus(_emailFocusNode);
-      }
+      FocusScope.of(context).requestFocus(_emailFocusNode);
     });
   }
 
@@ -39,26 +47,38 @@ class _HostRegisterScreenState extends State<HostRegisterScreen> {
   Future<void> _sendMagicLink() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final email = _emailController.text.trim();
     setState(() {
-      _isSending = true;
-      _errorMessage = null;
+      _isLoading = true;
+      _emailError = null;
     });
 
     try {
-      await SupabaseAuthService().signInWithMagicLink(email);
-      if (!mounted) return;
+      await AuthService.instance.signInWithMagicLink(_emailController.text.trim());
       _showSuccessDialog();
-    } on Exception catch (e) {
-      if (!mounted) return;
+    } catch (e) {
+      _logger.e('Magic link send failed', error: e);
       setState(() {
-        _isSending = false;
-        _errorMessage = e.toString().split(':').last.trim();
-        if (_errorMessage == e.toString()) {
-          _errorMessage = 'Failed to send login link. Please try again.';
-        }
+        _emailError = _getFriendlyErrorMessage(e);
       });
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
+  }
+
+  String _getFriendlyErrorMessage(dynamic error) {
+    final message = error.toString().toLowerCase();
+    if (message.contains('invalid email')) {
+      return 'Please enter a valid email address';
+    }
+    if (message.contains('rate limit')) {
+      return 'Too many attempts. Please wait a moment';
+    }
+    if (message.contains('network')) {
+      return 'Network error. Please check your connection';
+    }
+    return 'Failed to send link. Please try again';
   }
 
   void _showSuccessDialog() {
@@ -66,15 +86,28 @@ class _HostRegisterScreenState extends State<HostRegisterScreen> {
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: const Text('Check your email!'),
-        content: Text(
-          'We sent a login link to ${_emailController.text.trim()}.\n\n'
-              'Click the link in your email to complete registration and access your host dashboard.',
-          style: Theme.of(context).textTheme.bodyMedium,
+        icon: Icon(Icons.email_outlined, size: 48, color: primaryColor),
+        title: const Text('Check Your Email'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('We\'ve sent a magic link to:'),
+            const SizedBox(height: 8),
+            Text(
+              _emailController.text.trim(),
+              style: TextStyle(fontWeight: FontWeight.bold, color: primaryColor),
+            ),
+            const SizedBox(height: 12),
+            const Text('Click the link in that email to continue registration.'),
+          ],
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () {
+              Navigator.pop(context); // Close dialog
+              Navigator.pop(context); // Return to previous screen
+            },
             child: const Text('OK'),
           ),
         ],
@@ -86,121 +119,130 @@ class _HostRegisterScreenState extends State<HostRegisterScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final textColor = isDark ? Colors.white : Colors.black87;
 
-    return GestureDetector(
-      onTap: () => FocusScope.of(context).unfocus(),
-      child: Scaffold(
-        backgroundColor: theme.scaffoldBackgroundColor,
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          surfaceTintColor: Colors.transparent,
-          elevation: 0,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            color: textColor,
-            onPressed: () => Navigator.of(context).pop(),
-          ),
-          title: Text(
-            'Become a Host',
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w700,
-              color: textColor,
-            ),
-          ),
-          centerTitle: true,
-        ),
-        body: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Register as a Host',
-                  style: theme.textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: textColor,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Enter your email to create a host account. '
-                      'We’ll send you a secure login link — no password needed.',
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    color: isDark ? Colors.white70 : Colors.grey[600],
-                  ),
-                ),
-                const SizedBox(height: 32),
-                TextFormField(
-                  focusNode: _emailFocusNode, // 👈 Auto-focused
-                  controller: _emailController,
-                  textInputAction: TextInputAction.done,
-                  onEditingComplete: _isSending ? null : _sendMagicLink,
-                  keyboardType: TextInputType.emailAddress,
-                  autofillHints: const [AutofillHints.email],
-                  decoration: InputDecoration(
-                    labelText: 'Email address',
-                    hintText: 'you@domain.com',
-                    prefixIcon: const Icon(Icons.email_outlined),
-                    errorText: _errorMessage,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Email is required';
-                    }
-                    final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+');
-                    if (!emailRegex.hasMatch(value.trim())) {
-                      return 'Please enter a valid email';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: _isSending ? null : _sendMagicLink,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: primaryColor,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: _isSending
-                        ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    )
-                        : const Text(
-                      'Send Login Link',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                if (_errorMessage != null)
-                  Text(
-                    '💡 Tip: Check your spam folder if you don’t see the email.',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: Colors.orange.shade700,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-              ],
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Host Registration'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+      ),
+      backgroundColor: theme.scaffoldBackgroundColor,
+      body: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const SizedBox(height: 40),
+                  _buildHeader(theme),
+                  const SizedBox(height: 40),
+                  _buildEmailField(theme),
+                  if (_emailError != null) ...[
+                    const SizedBox(height: 8),
+                    _buildErrorText(),
+                  ],
+                  const Spacer(),
+                  _buildSendButton(),
+                  const SizedBox(height: 24),
+                  _buildFooter(),
+                ],
+              ),
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(ThemeData theme) {
+    return Column(
+      children: [
+        Icon(Icons.house_rounded, size: 64, color: primaryColor),
+        const SizedBox(height: 16),
+        Text(
+          'List Your Property',
+          style: theme.textTheme.headlineMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Start hosting guests and earning income today',
+          style: theme.textTheme.bodyLarge?.copyWith(
+            color: theme.textTheme.bodyLarge?.color?.withOpacity(0.7),
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEmailField(ThemeData theme) {
+    return TextFormField(
+      controller: _emailController,
+      focusNode: _emailFocusNode,
+      keyboardType: TextInputType.emailAddress,
+      textInputAction: TextInputAction.done,
+      enabled: !_isLoading,
+      decoration: InputDecoration(
+        labelText: 'Email Address',
+        hintText: 'host@example.com',
+        prefixIcon: Icon(Icons.email_outlined, color: primaryColor),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        errorText: _emailError,
+      ),
+      validator: (value) {
+        if (value == null || value.trim().isEmpty) {
+          return 'Email is required';
+        }
+        final emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+        if (!emailRegex.hasMatch(value.trim())) {
+          return 'Enter a valid email address';
+        }
+        return null;
+      },
+      onFieldSubmitted: (_) => _sendMagicLink(),
+    );
+  }
+
+  Widget _buildErrorText() {
+    return Text(
+      _emailError!,
+      style: TextStyle(color: Colors.red.shade700, fontSize: 12),
+    );
+  }
+
+  Widget _buildSendButton() {
+    return ElevatedButton(
+      onPressed: _isLoading ? null : _sendMagicLink,
+      style: ElevatedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+      child: _isLoading
+          ? const SizedBox(
+        height: 20,
+        width: 20,
+        child: CircularProgressIndicator(strokeWidth: 2),
+      )
+          : const Text(
+        'Send Magic Link',
+        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+      ),
+    );
+  }
+
+  Widget _buildFooter() {
+    return const Padding(
+      padding: EdgeInsets.symmetric(horizontal: 16),
+      child: Text(
+        'We\'ll send you a secure link to verify your email. No password needed!',
+        textAlign: TextAlign.center,
+        style: TextStyle(fontSize: 12, color: Colors.grey),
       ),
     );
   }

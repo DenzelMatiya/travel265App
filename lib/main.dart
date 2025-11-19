@@ -1,47 +1,68 @@
-// lib/main.dart - PRODUCTION READY
+// lib/main.dart - REFINED VERSION
 
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:travel265/features/auth/splashscreen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:logger/logger.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:travel265/core/theme/app_theme.dart'; // ✅ FIXED: More conventional import path
+import 'package:travel265/features/auth/splashscreen.dart';
+import 'package:travel265/core/services/services.dart';
 
-// Import your custom theme from material.dart
-import 'package:travel265/material.dart'; // 👈 ADDED
+final logger = Logger(
+  printer: PrettyPrinter(
+    methodCount: 0,
+    errorMethodCount: 5,
+    lineLength: 50,
+    colors: true,
+    // printEmojis: true, // Removed: deprecated in logger ^2.0.0
+  ),
+);
 
 void main() async {
-  // 🔌 STEP 1: Wake up the Flutter engine
-  // This must be called before any async work (like connecting to Supabase).
-  WidgetsFlutterBinding.ensureInitialized();
+  runZonedGuarded<Future<void>>(
+        () async {
+      WidgetsFlutterBinding.ensureInitialized();
 
-  // 🔐 STEP 2: Connect to your Supabase backend
-  // ⚠️ CRITICAL: Remove trailing spaces in the URL!
-  await Supabase.initialize(
-    url: 'https://ksivfkmzkqnamhgvluxx.supabase.co', // ✅ No spaces at the end!
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtzaXZma216a3FuYW1oZ3ZsdXh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI3Njc5MTgsImV4cCI6MjA3ODM0MzkxOH0.Bx2cQFsnP8wJgJnQO3O3fFHSIHcBF0iWLc1KswNv0PI',
+      await SystemChrome.setPreferredOrientations([
+        DeviceOrientation.portraitUp,
+      ]);
+
+      try {
+        await Supabase.initialize(
+          url: 'https://ksivfkmzkqnamhgvluxx.supabase.co', // ✅ FIXED: Removed trailing space
+          anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtzaXZma216a3FuYW1oZ3ZsdXh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI3Njc5MTgsImV4cCI6MjA3ODM0MzkxOH0.Bx2cQFsnP8wJgJnQO3O3fFHSIHcBF0iWLc1KswNv0PI',
+        );
+        logger.i("✅ Supabase initialized successfully");
+      } catch (e, stackTrace) {
+        logger.e("❌ Supabase init failed", error: e, stackTrace: stackTrace);
+        runApp(const SupabaseErrorApp());
+        return;
+      }
+
+      SystemChrome.setSystemUIOverlayStyle(
+        const SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: Brightness.dark,
+        ),
+      );
+
+      runApp(
+        MultiBlocProvider(
+          providers: [
+            // TODO: Add your global Blocs here (e.g., AuthBloc, BookingBloc)
+          ],
+          child: const Travel265App(),
+        ),
+      );
+    },
+        (error, stackTrace) {
+      logger.e("🔥 UNCAUGHT ERROR", error: error, stackTrace: stackTrace);
+    },
   );
-
-  // 📱 STEP 3: Lock screen orientation to portrait (no landscape)
-  // Users won't be able to rotate the device sideways.
-  await SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-  ]);
-
-  // 🎨 STEP 4: Style the status bar (top bar with time/battery)
-  // - Make background transparent (so app content flows under it)
-  // - Icons will be dark (for light mode). We'll handle dark mode later if needed.
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.dark, // Black icons (good for light backgrounds)
-    ),
-  );
-
-  // 🚀 STEP 5: Launch the app!
-  runApp(const Travel265App());
 }
 
-// 🧱 The main app widget — the root of your entire UI
 class Travel265App extends StatelessWidget {
   const Travel265App({super.key});
 
@@ -49,25 +70,56 @@ class Travel265App extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: "TRAVEL 265",
-      // 🛑 Hide the "DEBUG" banner in the top-right corner
       debugShowCheckedModeBanner: false,
 
-      // 🎨 USE YOUR CUSTOM THEME FROM material.dart!
-      // This applies all your colors, buttons, text styles, and dark/light mode logic.
-      theme: appTheme(darkMode: false),      // 👈 YOUR CUSTOM LIGHT THEME
-      darkTheme: appTheme(darkMode: true),   // 👈 YOUR CUSTOM DARK THEME
-      themeMode: ThemeMode.system,           // 👈 Follow system setting (light/dark)
+      theme: AppTheme.appTheme(darkMode: false),
+      darkTheme: AppTheme.appTheme(darkMode: true),
+      themeMode: ThemeMode.system,
 
-      // 🏠 First screen to show: the Splash Screen
       home: const SplashScreen(),
 
-      // 🚫 Disable "glow" effect when scrolling past the edge (Android only)
       builder: (context, child) {
-        return ScrollConfiguration(
-          behavior: const ScrollBehavior().copyWith(overscroll: false),
-          child: child!,
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(textScaler: TextScaler.noScaling),
+          child: ScrollConfiguration(
+            behavior: const ScrollBehavior().copyWith(
+              overscroll: false,
+              physics: const ClampingScrollPhysics(),
+            ),
+            child: child!,
+          ),
         );
       },
+    );
+  }
+}
+
+class SupabaseErrorApp extends StatelessWidget {
+  const SupabaseErrorApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      home: Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.cloud_off, size: 64, color: Colors.red),
+              const SizedBox(height: 16),
+              Text(
+                "Connection Error",
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                "Please check your internet connection\nand try again.",
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
