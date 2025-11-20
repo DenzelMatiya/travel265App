@@ -1,8 +1,8 @@
+//lib/core/repositories/property_repository.dart
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:travel265/core/models/property_model.dart';
-import 'package:travel265/core/models/amenity_model.dart';
 import 'package:travel265/core/utils/logger.dart';
 import 'package:uuid/uuid.dart';
 
@@ -13,7 +13,77 @@ class PropertyRepository {
   PropertyRepository({SupabaseClient? client})
       : _client = client ?? Supabase.instance.client;
 
-  // ... (keep existing getProperties, getPropertyById methods) ...
+  /// **GET ALL PROPERTIES** - This method was missing
+  Future<List<PropertyModel>> getProperties({
+    String? city,
+    PropertyType? type,
+  }) async {
+    try {
+      var query = _client.from('listings').select('*');
+
+      // Apply filters if provided
+      if (city != null && city.isNotEmpty) {
+        query = query.eq('city', city);
+      }
+      if (type != null) {
+        query = query.eq('property_type', type.name);
+      }
+
+      final response = await query;
+
+      // Convert each item to PropertyModel
+      final properties = (response as List)
+          .map((item) => _propertyFromMap(item))
+          .toList();
+
+      return properties;
+    } catch (e, stackTrace) {
+      logger.e('Get properties failed', error: e, stackTrace: stackTrace);
+      throw Exception('Failed to load properties: $e');
+    }
+  }
+
+  /// **GET PROPERTY BY ID** - This method was missing
+  Future<PropertyModel> getPropertyById(String propertyId) async {
+    try {
+      final response = await _client
+          .from('listings')
+          .select('*')
+          .eq('id', propertyId)
+          .single();
+
+      return _propertyFromMap(response);
+    } catch (e, stackTrace) {
+      logger.e('Get property by ID failed', error: e, stackTrace: stackTrace);
+      throw Exception('Property not found: $e');
+    }
+  }
+
+  /// **Helper method to convert map to PropertyModel**
+  PropertyModel _propertyFromMap(Map<String, dynamic> map) {
+    return PropertyModel(
+      id: map['id'],
+      hostId: map['host_id'],
+      title: map['property_name'],
+      description: map['description'],
+      type: PropertyType.values.firstWhere(
+            (e) => e.name == map['property_type'],
+        orElse: () => PropertyType.apartment, // default fallback
+      ),
+      city: map['city'],
+      region: map['region'],
+      address: map['address'],
+      latitude: (map['latitude'] as num).toDouble(),
+      longitude: (map['longitude'] as num).toDouble(),
+      pricePerNight: (map['price_per_night'] as num).toDouble(),
+      maxGuests: map['max_guests'],
+      bedrooms: map['bedrooms'],
+      bathrooms: map['bathrooms'],
+      amenities: List<String>.from(map['amenities'] ?? []),
+      imageUrls: List<String>.from(map['photos'] ?? []),
+      createdAt: DateTime.parse(map['created_at']),
+    );
+  }
 
   /// **NEW: Create property with image uploads**
   Future<PropertyModel> createProperty({
@@ -66,32 +136,12 @@ class PropertyRepository {
         'created_at': DateTime.now().toIso8601String(),
       }).select().single();
 
-      // Convert to PropertyModel (you may need a fromListingsMap factory)
-      return PropertyModel(
-        id: response['id'],
-        hostId: response['host_id'],
-        title: response['property_name'],
-        description: response['description'],
-        type: PropertyType.values.firstWhere((e) => e.name == response['property_type']),
-        city: response['city'],
-        region: response['region'],
-        address: response['address'],
-        latitude: response['latitude'],
-        longitude: response['longitude'],
-        pricePerNight: response['price_per_night'].toDouble(),
-        maxGuests: response['max_guests'],
-        bedrooms: response['bedrooms'],
-        bathrooms: response['bathrooms'],
-        amenities: List<String>.from(response['amenities']),
-        imageUrls: List<String>.from(response['photos']),
-        createdAt: DateTime.parse(response['created_at']),
-      );
+      return _propertyFromMap(response);
     } catch (e, stackTrace) {
       logger.e('Property creation failed', error: e, stackTrace: stackTrace);
       throw Exception('Failed to create property: $e');
     }
   }
-
 
   /// **NEW: Upload images to Supabase Storage**
   Future<List<String>> uploadPropertyImages({
@@ -101,7 +151,7 @@ class PropertyRepository {
   }) async {
     try {
       final List<String> downloadUrls = [];
-      final tempDir = await getTemporaryDirectory();
+      await getTemporaryDirectory();
 
       for (int i = 0; i < imageFiles.length; i++) {
         final fileName = 'image_${i + 1}.jpg';

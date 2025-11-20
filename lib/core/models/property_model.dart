@@ -1,3 +1,4 @@
+//lib/core/models/property_model.dart
 import 'package:equatable/equatable.dart';
 
 enum PropertyType { apartment, house, villa, cottage, hotel, lodge }

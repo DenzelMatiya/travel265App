@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:travel265/models/property_model.dart'; // ADD THIS IMPORT
 import 'package:travel265/models/property_models.dart'; // ADD THIS IMPORT
-import 'package:travel265/features/services/property_service.dart';
 
 class EditPropertyScreen extends StatefulWidget {
   final Property? property;
@@ -15,7 +14,6 @@ class EditPropertyScreen extends StatefulWidget {
 
 class _EditPropertyScreenState extends State<EditPropertyScreen> {
   final _formKey = GlobalKey<FormState>();
-  final PropertyService _propertyService = PropertyService();
   final ImagePicker _imagePicker = ImagePicker();
 
   // Form controllers
@@ -242,7 +240,7 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: DropdownButtonFormField<String>(
-        value: value,
+        initialValue: value,
         decoration: InputDecoration(
           labelText: label,
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
@@ -267,7 +265,7 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeColor: const Color(0xFF0b95da),
+            activeThumbColor: const Color(0xFF0b95da),
           ),
         ],
       ),
@@ -451,63 +449,13 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
       setState(() => _isLoading = true);
 
       try {
-        final pricingSettings = PricingSettings(
-          basePrice: int.parse(_priceController.text),
-          cleaningFee: int.parse(_cleaningFeeController.text),
-          securityDeposit: int.parse(_securityDepositController.text),
-        );
 
-        final bookingSettings = BookingSettings(
-          minNights: int.parse(_minNightsController.text),
-          requireDeposit: _requireDeposit,
-          instantBooking: _instantBooking,
-        );
 
-        final amenities = _selectedAmenities.map((name) => Amenity(
+        _selectedAmenities.map((name) => Amenity(
           id: name.toLowerCase().replaceAll(' ', '_'),
           name: name,
           icon: Icons.check, // You would map to actual icons
         )).toList();
-
-        if (widget.property == null) {
-          // Create new property
-          await _propertyService.createProperty(
-            title: _titleController.text,
-            description: _descriptionController.text,
-            type: _selectedType,
-            location: _locationController.text,
-            pricePerNight: int.parse(_priceController.text),
-            guests: int.parse(_guestsController.text),
-            bedrooms: int.parse(_bedroomsController.text),
-            beds: int.parse(_bedsController.text),
-            bathrooms: int.parse(_bathroomsController.text),
-            images: _images,
-            amenities: amenities,
-            houseRules: _customRules,
-            pricingSettings: pricingSettings,
-            bookingSettings: bookingSettings,
-          );
-        } else {
-          // Update existing property
-          await _propertyService.updateProperty(
-            widget.property!.id,
-            title: _titleController.text,
-            description: _descriptionController.text,
-            type: _selectedType,
-            location: _locationController.text,
-            pricePerNight: int.parse(_priceController.text),
-            guests: int.parse(_guestsController.text),
-            bedrooms: int.parse(_bedroomsController.text),
-            beds: int.parse(_bedsController.text),
-            bathrooms: int.parse(_bathroomsController.text),
-            images: _images,
-            amenities: amenities,
-            houseRules: _customRules,
-            pricingSettings: pricingSettings,
-            bookingSettings: bookingSettings,
-          );
-        }
-
         Navigator.pop(context, true); // Return success
       } catch (e) {
         setState(() => _isLoading = false);

@@ -1,3 +1,6 @@
+//lib/core/blocs/property/property_event.dart
+import 'dart:io';
+
 import 'package:equatable/equatable.dart';
 import 'package:travel265/core/models/property_model.dart';
 
