@@ -18,7 +18,7 @@ final _logger = Logger(printer: PrettyPrinter(methodCount: 0));
 /// final data = await client.from('bookings').select();
 /// ```
 /// 
-/// Features:
+/// features:
 /// - Auto-injects Supabase auth token
 /// - Timeout & retry logic
 /// - Request/response logging
@@ -142,7 +142,7 @@ class ApiService {
         headers['Authorization'] = 'Bearer ${session!.accessToken}';
       }
     } catch (e) {
-      _logger.w('Auth token injection failed: $e');
+      _logger.w('auth token injection failed: $e');
     }
 
     return headers;

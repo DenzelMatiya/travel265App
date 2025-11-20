@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:travel265/features/services/auth_service.dart';
+import 'package:travel265/core/services/auth_service.dart';
 
 class GuestHomeScreen extends StatefulWidget {
   const GuestHomeScreen({super.key});

@@ -14,9 +14,8 @@ import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart'; // For generating listing ID
-import '../services/auth_service.dart';
-import 'host_dashboard.dart';
-
+import 'package:travel265/core/services/auth_service.dart';
+import 'package:travel265/features/dashboard/host_dashboard.dart';
 final supabase = Supabase.instance.client;
 
 /* -------------------------------------------------------------------------- */
@@ -235,12 +234,11 @@ class _HostCreateListingScreenState extends State<HostCreateListingScreen>
   Future<void> _saveListing() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final authService = SupabaseAuthService();
-    if (!authService.isUserLoggedIn) {
+    if (!AuthService.instance.isAuthenticated) {
       _showSnack("You must be logged in as a host to create a listing.", isError: true);
       return;
     }
-    final hostId = authService.currentUserId!;
+    final hostId = AuthService.instance.currentUser!.id;
 
     if (_selectedImages.isEmpty) {
       _showSnack("Please add at least one photo of your property.", isError: true);
