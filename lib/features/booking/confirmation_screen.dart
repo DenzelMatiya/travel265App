@@ -1,25 +1,13 @@
+//lib/features/booking/confirmation_screen.dart
 import 'package:flutter/material.dart';
-import 'package:travel265/models/property_model.dart'; // ADD THIS IMPORT
+import 'package:travel265/core/models/booking_model.dart';
+import 'package:travel265/core/models/property_model.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-
 class ConfirmationScreen extends StatefulWidget {
-  final Property property; // This should now be recognized
-  final DateTime checkIn;
-  final DateTime checkOut;
-  final int guests;
-  final int totalAmount;
-  final String paymentMethod;
+  final BookingModel booking;
 
-  const ConfirmationScreen({
-    super.key,
-    required this.property,
-    required this.checkIn,
-    required this.checkOut,
-    required this.guests,
-    required this.totalAmount,
-    required this.paymentMethod,
-  });
+  const ConfirmationScreen({super.key, required this.booking});
 
   @override
   State<ConfirmationScreen> createState() => _ConfirmationScreenState();
@@ -28,6 +16,9 @@ class ConfirmationScreen extends StatefulWidget {
 class _ConfirmationScreenState extends State<ConfirmationScreen> {
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -118,7 +109,7 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(8),
                           image: DecorationImage(
-                            image: NetworkImage(widget.property.images.first),
+                            image: NetworkImage(widget.booking.property.imageUrls.first),
                             fit: BoxFit.cover,
                           ),
                         ),
@@ -129,7 +120,7 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              widget.property.type,
+                              widget.booking.property.type.name,
                               style: const TextStyle(
                                 color: Colors.grey,
                                 fontSize: 14,
@@ -137,7 +128,7 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              widget.property.title,
+                              widget.booking.property.title,
                               style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
@@ -147,12 +138,12 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
                             const SizedBox(height: 16),
                             _buildTripDetail(
                               Icons.calendar_today,
-                              "${_formatDate(widget.checkIn)} - ${_formatDate(widget.checkOut)}",
+                              "${_formatDate(widget.booking.checkIn)} - ${_formatDate(widget.booking.checkOut)}",
                             ),
                             const SizedBox(height: 8),
                             _buildTripDetail(
                               Icons.group,
-                              "${widget.guests} guest${widget.guests > 1 ? 's' : ''}",
+                              "${widget.booking.numberOfGuests} guest${widget.booking.numberOfGuests > 1 ? 's' : ''}",
                             ),
                           ],
                         ),
@@ -290,7 +281,7 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
 
   void _messageHost() async {
     final phoneNumber = "+265123456789"; // Replace with actual host number
-    final message = "Hello! I've just booked your property '${widget.property.title}' from ${_formatDate(widget.checkIn)} to ${_formatDate(widget.checkOut)}.";
+    final message = "Hello! I've just booked your property '${widget.booking.property.title}' from ${_formatDate(widget.booking.checkIn)} to ${_formatDate(widget.booking.checkOut)}.";
 
     final url = "https://wa.me/$phoneNumber?text=${Uri.encodeComponent(message)}";
 

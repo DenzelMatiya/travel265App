@@ -1,3 +1,4 @@
+//lib/features/dashboard/domain/models/host_stats_model.dart
 import 'package:equatable/equatable.dart';
 
 class HostStats extends Equatable {

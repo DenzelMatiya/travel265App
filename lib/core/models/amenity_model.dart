@@ -1,3 +1,4 @@
+//lib/core/models/amenity_model.dart
 import 'package:flutter/material.dart';
 import 'package:equatable/equatable.dart';
 

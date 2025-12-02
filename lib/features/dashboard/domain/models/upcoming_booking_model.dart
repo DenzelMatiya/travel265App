@@ -1,3 +1,4 @@
+//lib/features/dashboard/domain/models/upcoming_booking_model.dart
 import 'package:equatable/equatable.dart';
 
 class UpcomingBooking extends Equatable {

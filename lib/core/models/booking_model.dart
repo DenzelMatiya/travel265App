@@ -1,4 +1,6 @@
+//lib/core/models/booking_model.dart
 import 'package:equatable/equatable.dart';
+import 'package:travel265/core/models/property_model.dart';
 
 enum BookingStatus { pending, confirmed, cancelled, completed }
 
@@ -15,6 +17,7 @@ class BookingModel extends Equatable {
   final String? specialRequests;
   final DateTime createdAt;
   final DateTime? updatedAt;
+  final PropertyModel property; // Add this line
 
   const BookingModel({
     required this.id,
@@ -29,12 +32,11 @@ class BookingModel extends Equatable {
     this.specialRequests,
     required this.createdAt,
     this.updatedAt,
+    required this.property, // Add this line
   });
 
-  // Computed properties
-  int get numberOfNights => checkOut.difference(checkIn).inDays;
-
-  factory BookingModel.fromMap(Map<String, dynamic> map) {
+  // Factory method to create from map
+  factory BookingModel.fromMap(Map<String, dynamic> map, PropertyModel property) {
     return BookingModel(
       id: map['id'] as String,
       propertyId: map['property_id'] as String,
@@ -50,9 +52,8 @@ class BookingModel extends Equatable {
       ),
       specialRequests: map['special_requests'] as String?,
       createdAt: DateTime.parse(map['created_at'] as String),
-      updatedAt: map['updated_at'] != null
-          ? DateTime.parse(map['updated_at'] as String)
-          : null,
+      updatedAt: map['updated_at'] != null ? DateTime.parse(map['updated_at'] as String) : null,
+      property: property, // Add this line
     );
   }
 

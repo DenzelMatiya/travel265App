@@ -1,13 +1,18 @@
+//lib/core/repositories/booking_repository.dart
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:travel265/core/models/booking_model.dart';
+import 'package:travel265/core/models/property_model.dart';
+import 'package:travel265/core/repositories/property_repository.dart';
 import 'package:travel265/core/utils/logger.dart';
 
 /// Handles all booking operations
 class BookingRepository {
   final SupabaseClient _client;
+  final PropertyRepository _propertyRepository;
 
-  BookingRepository({SupabaseClient? client})
-      : _client = client ?? Supabase.instance.client;
+  BookingRepository({SupabaseClient? client, PropertyRepository? propertyRepository})
+      : _client = client ?? Supabase.instance.client,
+        _propertyRepository = propertyRepository ?? PropertyRepository();
 
   /// Create new booking
   Future<BookingModel> createBooking(BookingModel booking) async {
@@ -22,7 +27,11 @@ class BookingRepository {
           .single();
 
       logger.i('✅ Booking created: ${booking.id}');
-      return BookingModel.fromMap(response);
+
+      // Fetch the property details
+      final property = await _propertyRepository.getPropertyById(booking.propertyId);
+
+      return BookingModel.fromMap(response, property);
     } catch (e, stackTrace) {
       logger.e('Booking creation failed', error: e, stackTrace: stackTrace);
       rethrow;
@@ -57,7 +66,7 @@ class BookingRepository {
           .order('created_at', ascending: false);
 
       return (response as List)
-          .map((e) => BookingModel.fromMap(e as Map<String, dynamic>))
+          .map((e) => BookingModel.fromMap(e as Map<String, dynamic>, PropertyModel.fromMap(e['properties'])))
           .toList();
     } catch (e, stackTrace) {
       logger.e('Bookings fetch failed', error: e, stackTrace: stackTrace);
@@ -75,7 +84,10 @@ class BookingRepository {
           .select()
           .single();
 
-      return BookingModel.fromMap(response);
+      // Fetch the property details
+      final property = await _propertyRepository.getPropertyById(response['property_id']);
+
+      return BookingModel.fromMap(response, property);
     } catch (e, stackTrace) {
       logger.e('Booking update failed', error: e, stackTrace: stackTrace);
       throw Exception('Failed to update booking: $e');

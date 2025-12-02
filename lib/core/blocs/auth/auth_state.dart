@@ -1,3 +1,4 @@
+// lib/core/blocs/auth/auth_state.dart
 import 'package:equatable/equatable.dart';
 import 'package:travel265/core/models/user_model.dart';
 

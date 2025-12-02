@@ -1,9 +1,10 @@
+//lib/features/booking/booking_summary_screen.dart
 import 'package:flutter/material.dart';
-import 'package:travel265/models/property_model.dart';
+import 'package:travel265/core/models/property_model.dart'; // Ensure this is the correct import
 import 'package:travel265/features/booking/payment_screen.dart';
 
 class BookingSummaryScreen extends StatefulWidget {
-  final Property property;
+  final PropertyModel property; // Use PropertyModel instead of Property
   final DateTime checkIn;
   final DateTime checkOut;
   final int guests;
@@ -24,7 +25,7 @@ class _BookingSummaryScreenState extends State<BookingSummaryScreen> {
   bool _isGeneratingInvoice = false;
 
   int get nights => widget.checkOut.difference(widget.checkIn).inDays;
-  int get basePrice => nights * widget.property.pricePerNight;
+  int get basePrice => (nights * widget.property.pricePerNight).round(); // Convert double to int
   int get serviceFee => (basePrice * 0.1).round(); // 10% service fee
   int get occupancyTax => (basePrice * 0.05).round(); // 5% tax
   int get totalAmount => basePrice + serviceFee + occupancyTax;
@@ -76,7 +77,7 @@ class _BookingSummaryScreenState extends State<BookingSummaryScreen> {
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(8),
                       image: DecorationImage(
-                        image: NetworkImage(widget.property.images.first),
+                        image: NetworkImage(widget.property.imageUrls.first),
                         fit: BoxFit.cover,
                       ),
                     ),
@@ -87,7 +88,7 @@ class _BookingSummaryScreenState extends State<BookingSummaryScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          widget.property.type,
+                          widget.property.type.name,
                           style: const TextStyle(
                             color: Color(0xFF49819c),
                             fontSize: 14,

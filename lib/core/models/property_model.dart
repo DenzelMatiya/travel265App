@@ -1,4 +1,3 @@
-//lib/core/models/property_model.dart
 import 'package:equatable/equatable.dart';
 
 enum PropertyType { apartment, house, villa, cottage, hotel, lodge }
@@ -11,12 +10,12 @@ class PropertyModel extends Equatable {
   final String description;
   final PropertyType type;
   final String city;
-  final String region; // Malawi region (Northern, Central, Southern)
+  final String region;
   final String address;
   final double latitude;
   final double longitude;
   final double pricePerNight;
-  final String currency; // MWK, USD
+  final String currency;
   final int maxGuests;
   final int bedrooms;
   final int bathrooms;
@@ -27,6 +26,16 @@ class PropertyModel extends Equatable {
   final PropertyStatus status;
   final DateTime createdAt;
   final DateTime? updatedAt;
+
+  // Extra UI fields
+  final bool isFavorite;
+  final String? locationDescription;
+  final String? nearestLandmark;
+  final double? distanceFromLandmark;
+  final List<Map<String, dynamic>> reviews;
+  final List<String>? houseRules;
+
+  final Map<String, dynamic>? host;
 
   const PropertyModel({
     required this.id,
@@ -51,40 +60,75 @@ class PropertyModel extends Equatable {
     this.status = PropertyStatus.active,
     required this.createdAt,
     this.updatedAt,
+    this.isFavorite = false,
+    this.locationDescription,
+    this.nearestLandmark,
+    this.distanceFromLandmark,
+    this.reviews = const [],
+    this.houseRules,
+    this.host,
   });
 
-  // Factory for Supabase data
   factory PropertyModel.fromMap(Map<String, dynamic> map) {
+    // Safe typed cast helper
+    T? cast<T>(dynamic value) => value is T ? value : null;
+
+    // Safe list-of-string converter
+    List<String> safeStringList(dynamic value) {
+      if (value is List) {
+        return value.map((e) => e.toString()).toList();
+      }
+      return [];
+    }
+
     return PropertyModel(
-      id: map['id'] as String,
-      hostId: map['host_id'] as String,
-      title: map['title'] as String,
-      description: map['description'] as String,
+      id: map['id']?.toString() ?? '',
+      hostId: map['host_id']?.toString() ?? '',
+      title: map['title']?.toString() ?? '',
+      description: map['description']?.toString() ?? '',
       type: PropertyType.values.firstWhere(
             (e) => e.name == map['type'],
         orElse: () => PropertyType.house,
       ),
-      city: map['city'] as String,
-      region: map['region'] as String,
-      address: map['address'] as String,
-      latitude: (map['latitude'] as num).toDouble(),
-      longitude: (map['longitude'] as num).toDouble(),
-      pricePerNight: (map['price_per_night'] as num).toDouble(),
-      currency: map['currency'] as String? ?? 'MWK',
-      maxGuests: map['max_guests'] as int,
-      bedrooms: map['bedrooms'] as int,
-      bathrooms: map['bathrooms'] as int,
-      amenities: List<String>.from(map['amenities'] ?? []),
-      imageUrls: List<String>.from(map['image_urls'] ?? []),
+      city: map['city']?.toString() ?? '',
+      region: map['region']?.toString() ?? '',
+      address: map['address']?.toString() ?? '',
+      latitude: (map['latitude'] as num?)?.toDouble() ?? 0.0,
+      longitude: (map['longitude'] as num?)?.toDouble() ?? 0.0,
+      pricePerNight: (map['price_per_night'] as num?)?.toDouble() ?? 0.0,
+      currency: map['currency']?.toString() ?? 'MWK',
+      maxGuests: cast<int>(map['max_guests']) ?? 0,
+      bedrooms: cast<int>(map['bedrooms']) ?? 0,
+      bathrooms: cast<int>(map['bathrooms']) ?? 0,
+      amenities: safeStringList(map['amenities']),
+      imageUrls: safeStringList(map['image_urls']),
       rating: (map['rating'] as num?)?.toDouble() ?? 0.0,
-      reviewCount: map['review_count'] as int? ?? 0,
+      reviewCount: cast<int>(map['review_count']) ?? 0,
       status: PropertyStatus.values.firstWhere(
             (e) => e.name == map['status'],
         orElse: () => PropertyStatus.active,
       ),
-      createdAt: DateTime.parse(map['created_at'] as String),
-      updatedAt: map['updated_at'] != null
-          ? DateTime.parse(map['updated_at'] as String)
+      createdAt: DateTime.tryParse(map['created_at']?.toString() ?? '') ??
+          DateTime.now(),
+      updatedAt:
+      map['updated_at'] != null ? DateTime.tryParse(map['updated_at'].toString()) : null,
+
+      // Extra fields
+      isFavorite: map['is_favorite'] == true,
+      locationDescription: cast<String>(map['location_description']),
+      nearestLandmark: cast<String>(map['nearest_landmark']),
+      distanceFromLandmark:
+      (map['distance_from_landmark'] as num?)?.toDouble(),
+      houseRules: map['house_rules'] is List
+          ? safeStringList(map['house_rules'])
+          : null,
+      reviews: map['reviews'] is List
+          ? List<Map<String, dynamic>>.from(
+        (map['reviews'] as List).whereType<Map<String, dynamic>>(),
+      )
+          : [],
+      host: map['host'] is Map
+          ? Map<String, dynamic>.from(map['host'])
           : null,
     );
   }
@@ -113,14 +157,21 @@ class PropertyModel extends Equatable {
       'status': status.name,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
+
+      // Extra
+      'is_favorite': isFavorite,
+      'location_description': locationDescription,
+      'nearest_landmark': nearestLandmark,
+      'distance_from_landmark': distanceFromLandmark,
+      'house_rules': houseRules,
+      'reviews': reviews,
+      'host': host,
     };
   }
 
   @override
   List<Object?> get props => [id];
 
-  // Computed properties
-  String get displayPrice => '$currency ${pricePerNight.toStringAsFixed(0)}';
-
-  String get locationLabel => '$city, $region';
+  String get displayPrice => "$currency ${pricePerNight.toStringAsFixed(0)}";
+  String get locationLabel => "$city, $region";
 }

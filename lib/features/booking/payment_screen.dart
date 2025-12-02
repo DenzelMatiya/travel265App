@@ -1,9 +1,12 @@
+//lib/features/booking/payment_screen.dart
 import 'package:flutter/material.dart';
-import 'package:travel265/models/property_model.dart';
+import 'package:travel265/core/models/booking_model.dart';
+import 'package:travel265/core/models/property_model.dart';
 import 'package:travel265/features/booking/confirmation_screen.dart';
+import 'package:uuid/uuid.dart';
 
 class PaymentScreen extends StatefulWidget {
-  final Property property;
+  final PropertyModel property;
   final DateTime checkIn;
   final DateTime checkOut;
   final int guests;
@@ -364,17 +367,27 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
     setState(() => _isProcessing = false);
 
+    // Create a BookingModel instance
+    final booking = BookingModel(
+      id: const Uuid().v4(),
+      propertyId: widget.property.id,
+      guestId: 'guest_id', // Replace with actual guest ID
+      checkIn: widget.checkIn,
+      checkOut: widget.checkOut,
+      numberOfGuests: widget.guests,
+      totalPrice: widget.totalAmount.toDouble(),
+      currency: 'MWK',
+      status: BookingStatus.pending,
+      createdAt: DateTime.now(),
+      property: widget.property, // Pass the property model
+    );
+
     // Navigate to confirmation screen
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
         builder: (context) => ConfirmationScreen(
-          property: widget.property,
-          checkIn: widget.checkIn,
-          checkOut: widget.checkOut,
-          guests: widget.guests,
-          totalAmount: widget.totalAmount,
-          paymentMethod: "PayChangu",
+          booking: booking, // Pass the BookingModel instance
         ),
       ),
     );

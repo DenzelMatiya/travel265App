@@ -1,3 +1,4 @@
+//lib/core/models/user_model.dart
 import 'package:equatable/equatable.dart';
 
 enum UserRole { guest, host, admin }

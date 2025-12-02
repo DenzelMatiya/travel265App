@@ -1,11 +1,11 @@
+//lib/features/properties/property_details_screen.dart
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:travel265/models/property_model.dart';
-import 'package:travel265/models/property_models.dart'; // ADD THIS IMPORT
+import 'package:travel265/core/models/property_model.dart';
 import 'package:travel265/features/booking/booking_summary_screen.dart';
 
 class PropertyDetailsScreen extends StatefulWidget {
-  final Property property;
+  final PropertyModel property; // Use PropertyModel instead of Property
 
   const PropertyDetailsScreen({super.key, required this.property});
 
@@ -79,13 +79,13 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> {
                   // Image Gallery
                   PageView.builder(
                     controller: _imageController,
-                    itemCount: widget.property.images.length,
+                    itemCount: widget.property.imageUrls.length,
                     onPageChanged: (index) {
                       setState(() => _currentImageIndex = index);
                     },
                     itemBuilder: (context, index) {
                       return CachedNetworkImage(
-                        imageUrl: widget.property.images[index],
+                        imageUrl: widget.property.imageUrls[index],
                         fit: BoxFit.cover,
                         placeholder: (context, url) => Container(
                           color: Colors.grey[200],
@@ -106,7 +106,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> {
                     right: 0,
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(widget.property.images.length, (index) {
+                      children: List.generate(widget.property.imageUrls.length, (index) {
                         return Container(
                           width: 8,
                           height: 8,
@@ -155,7 +155,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        "${widget.property.guests} guests · ${widget.property.bedrooms} bedrooms · ${widget.property.beds} beds · ${widget.property.bathrooms} bath",
+                        "${widget.property.maxGuests} guests · ${widget.property.bedrooms} bedrooms · ${widget.property.beds} beds · ${widget.property.bathrooms} bath",
                         style: const TextStyle(
                           fontSize: 14,
                           color: Colors.grey,

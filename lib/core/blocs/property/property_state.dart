@@ -1,3 +1,4 @@
+//lib/core/blocs/property/property_state.dart
 import 'package:equatable/equatable.dart';
 import 'package:travel265/core/models/property_model.dart';
 
