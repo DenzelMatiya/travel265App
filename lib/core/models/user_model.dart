@@ -9,6 +9,7 @@ class UserModel extends Equatable {
   final String? fullName;
   final String? phoneNumber;
   final UserRole role;
+  final bool hasCompletedProfile;
   final DateTime createdAt;
   final Map<String, dynamic>? metadata;
 
@@ -18,6 +19,7 @@ class UserModel extends Equatable {
     this.fullName,
     this.phoneNumber,
     this.role = UserRole.guest,
+    this.hasCompletedProfile = false,
     required this.createdAt,
     this.metadata,
   });
@@ -26,7 +28,8 @@ class UserModel extends Equatable {
   factory UserModel.fromSupabaseUser({
     required String id,
     required String email,
-    UserRole role = UserRole.guest,
+    required UserRole role,
+    bool hasCompletedProfile = false,
     Map<String, dynamic>? userMetadata,
   }) {
     return UserModel(
@@ -35,13 +38,31 @@ class UserModel extends Equatable {
       fullName: userMetadata?['full_name'],
       phoneNumber: userMetadata?['phone_number'],
       role: role,
+      hasCompletedProfile: hasCompletedProfile,
       createdAt: DateTime.now(),
       metadata: userMetadata,
     );
   }
 
+  // Factory from database (user_roles table)
+  factory UserModel.fromJson(Map<String, dynamic> json) {
+    return UserModel(
+      id: json['user_id'],
+      email: json['email'] ?? '',
+      fullName: json['full_name'],
+      phoneNumber: json['phone_number'],
+      role: UserRole.values.firstWhere(
+            (r) => r.name == json['role'],
+        orElse: () => UserRole.guest,
+      ),
+      hasCompletedProfile: json['has_completed_profile'] ?? false,
+      createdAt: DateTime.parse(json['created_at']),
+      metadata: json['metadata'],
+    );
+  }
+
   @override
-  List<Object?> get props => [id, email, role];
+  List<Object?> get props => [id, email, role, hasCompletedProfile];
 
   UserModel copyWith({
     String? id,
@@ -49,6 +70,7 @@ class UserModel extends Equatable {
     String? fullName,
     String? phoneNumber,
     UserRole? role,
+    bool? hasCompletedProfile,
     DateTime? createdAt,
     Map<String, dynamic>? metadata,
   }) {
@@ -58,6 +80,7 @@ class UserModel extends Equatable {
       fullName: fullName ?? this.fullName,
       phoneNumber: phoneNumber ?? this.phoneNumber,
       role: role ?? this.role,
+      hasCompletedProfile: hasCompletedProfile ?? this.hasCompletedProfile,
       createdAt: createdAt ?? this.createdAt,
       metadata: metadata ?? this.metadata,
     );

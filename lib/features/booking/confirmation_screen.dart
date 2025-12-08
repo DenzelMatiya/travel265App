@@ -1,7 +1,6 @@
 //lib/features/booking/confirmation_screen.dart
 import 'package:flutter/material.dart';
 import 'package:travel265/core/models/booking_model.dart';
-import 'package:travel265/core/models/property_model.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class ConfirmationScreen extends StatefulWidget {

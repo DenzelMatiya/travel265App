@@ -1,28 +1,26 @@
-// lib/features/auth/host_login.dart - UPDATED FOR BLOC
+// lib/features/auth/password_reset_screen.dart
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:travel265/core/blocs/auth/auth_bloc.dart';
 import 'package:travel265/core/blocs/auth/auth_event.dart';
 import 'package:travel265/core/blocs/auth/auth_state.dart';
 import 'package:travel265/core/theme/app_theme.dart';
-import 'package:travel265/features/auth/host_register.dart';
 
-/// 🏠 Host Login Screen
+/// 🔄 Password Reset Screen
 ///
 /// Features:
-/// - Magic link authentication (primary)
-/// - Simple email input
-/// - Link to host registration
-class HostLoginScreen extends StatefulWidget {
-  const HostLoginScreen({super.key});
+/// - Email input for password reset
+/// - Sends reset link to email
+/// - Simple and clean UI
+class PasswordResetScreen extends StatefulWidget {
+  const PasswordResetScreen({super.key});
 
   @override
-  State<HostLoginScreen> createState() => _HostLoginScreenState();
+  State<PasswordResetScreen> createState() => _PasswordResetScreenState();
 }
 
-class _HostLoginScreenState extends State<HostLoginScreen> {
+class _PasswordResetScreenState extends State<PasswordResetScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _emailFocusNode = FocusNode();
@@ -43,12 +41,11 @@ class _HostLoginScreenState extends State<HostLoginScreen> {
     super.dispose();
   }
 
-  Future<void> _sendMagicLink() async {
+  Future<void> _handlePasswordReset() async {
     if (!_formKey.currentState!.validate()) return;
 
-    // Trigger magic link via BLoC
     context.read<AuthBloc>().add(
-      AuthMagicLinkSent(_emailController.text.trim()),
+      AuthPasswordResetRequested(_emailController.text.trim()),
     );
   }
 
@@ -57,16 +54,13 @@ class _HostLoginScreenState extends State<HostLoginScreen> {
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        icon: Icon(
-          Icons.mark_email_read_outlined,
-          size: 64,
-          color: primaryColor,
-        ),
+        icon: Icon(Icons.email_outlined, size: 48, color: primaryColor),
         title: const Text('Check Your Email'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Magic link sent to:'),
+            const Text('Password reset link sent to:'),
             const SizedBox(height: 8),
             Text(
               _emailController.text.trim(),
@@ -77,14 +71,16 @@ class _HostLoginScreenState extends State<HostLoginScreen> {
             ),
             const SizedBox(height: 12),
             const Text(
-              'Click the link in your email to access your host dashboard.',
-              textAlign: TextAlign.center,
+              'Click the link in that email to reset your password.',
             ),
           ],
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () {
+              Navigator.pop(context); // Close dialog
+              Navigator.pop(context); // Go back to login
+            },
             child: const Text('OK'),
           ),
         ],
@@ -94,42 +90,21 @@ class _HostLoginScreenState extends State<HostLoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Scaffold(
       appBar: AppBar(
+        title: const Text('Reset Password'),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: theme.colorScheme.onSurface),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          'Host Login',
-          style: theme.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        centerTitle: true,
       ),
       body: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
-          // Show success dialog when magic link sent
           if (state.status == AuthStatus.unauthenticated) {
-            // Check if we just sent a magic link
             _showSuccessDialog();
-          }
-
-          // Show error if something went wrong
-          if (state.status == AuthStatus.error) {
+          } else if (state.status == AuthStatus.error) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text(state.errorMessage ?? 'Failed to send magic link'),
+                content: Text(state.errorMessage ?? 'Failed to send reset link'),
                 backgroundColor: Colors.red.shade700,
-                behavior: SnackBarBehavior.floating,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
               ),
             );
           }
@@ -147,11 +122,9 @@ class _HostLoginScreenState extends State<HostLoginScreen> {
                   const SizedBox(height: 40),
                   _buildEmailField(),
                   const SizedBox(height: 24),
-                  _buildLoginButton(),
-                  const SizedBox(height: 32),
-                  _buildRegisterLink(),
+                  _buildResetButton(),
                   const SizedBox(height: 24),
-                  _buildInfoText(),
+                  _buildBackToLogin(),
                 ],
               ),
             ),
@@ -168,30 +141,21 @@ class _HostLoginScreenState extends State<HostLoginScreen> {
           width: 80,
           height: 80,
           decoration: BoxDecoration(
-            gradient: RadialGradient(
-              colors: [
-                primaryColor.withOpacity(0.15),
-                primaryColor.withOpacity(0.05),
-              ],
-            ),
+            color: primaryColor.withOpacity(0.1),
             shape: BoxShape.circle,
           ),
-          child: Icon(
-            Icons.home_work_outlined,
-            size: 40,
-            color: primaryColor,
-          ),
+          child: Icon(Icons.lock_reset, size: 40, color: primaryColor),
         ),
         const SizedBox(height: 24),
         Text(
-          "Welcome back, Host!",
+          'Forgot Password?',
           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.bold,
           ),
         ),
         const SizedBox(height: 8),
         Text(
-          "Enter your email to receive a secure login link",
+          'Enter your email and we\'ll send you a link to reset your password',
           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
             color: Colors.grey,
           ),
@@ -208,12 +172,10 @@ class _HostLoginScreenState extends State<HostLoginScreen> {
       keyboardType: TextInputType.emailAddress,
       textInputAction: TextInputAction.done,
       decoration: InputDecoration(
-        labelText: 'Email',
-        hintText: 'host@example.com',
+        labelText: 'Email Address',
+        hintText: 'your@email.com',
         prefixIcon: Icon(Icons.email_outlined, color: primaryColor),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
       ),
       validator: (value) {
         if (value == null || value.trim().isEmpty) {
@@ -224,17 +186,17 @@ class _HostLoginScreenState extends State<HostLoginScreen> {
         }
         return null;
       },
-      onFieldSubmitted: (_) => _sendMagicLink(),
+      onFieldSubmitted: (_) => _handlePasswordReset(),
     );
   }
 
-  Widget _buildLoginButton() {
+  Widget _buildResetButton() {
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) {
         final isLoading = state.status == AuthStatus.loading;
 
         return ElevatedButton(
-          onPressed: isLoading ? null : _sendMagicLink,
+          onPressed: isLoading ? null : _handlePasswordReset,
           style: ElevatedButton.styleFrom(
             padding: const EdgeInsets.symmetric(vertical: 16),
             shape: RoundedRectangleBorder(
@@ -245,13 +207,10 @@ class _HostLoginScreenState extends State<HostLoginScreen> {
               ? const SizedBox(
             height: 20,
             width: 20,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-            ),
+            child: CircularProgressIndicator(strokeWidth: 2),
           )
               : const Text(
-            'Send Magic Link',
+            'Send Reset Link',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
@@ -262,60 +221,13 @@ class _HostLoginScreenState extends State<HostLoginScreen> {
     );
   }
 
-  Widget _buildRegisterLink() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        const Text("Don't have an account?"),
-        TextButton(
-          onPressed: () {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (_) => const HostRegisterScreen(),
-              ),
-            );
-          },
-          child: Text(
-            'Sign Up',
-            style: TextStyle(
-              color: primaryColor,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildInfoText() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: primaryColor.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: primaryColor.withOpacity(0.2),
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.info_outline,
-            color: primaryColor,
-            size: 20,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              'We\'ll send you a secure link. No password needed!',
-              style: TextStyle(
-                fontSize: 12,
-                color: primaryColor,
-              ),
-            ),
-          ),
-        ],
+  Widget _buildBackToLogin() {
+    return TextButton.icon(
+      onPressed: () => Navigator.pop(context),
+      icon: const Icon(Icons.arrow_back),
+      label: const Text('Back to Login'),
+      style: TextButton.styleFrom(
+        foregroundColor: primaryColor,
       ),
     );
   }

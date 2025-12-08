@@ -1,6 +1,6 @@
 // lib/core/services/services.dart - Centralized Service Exports
 
-library services;
+library;
 
 /// Barrel file for service classes.
 ///

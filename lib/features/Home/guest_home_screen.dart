@@ -1,6 +1,5 @@
 //lib/features/home/guest_home_screen
 import 'package:flutter/material.dart';
-import 'package:travel265/core/services/auth_service.dart';
 
 class GuestHomeScreen extends StatefulWidget {
   const GuestHomeScreen({super.key});
@@ -12,12 +11,6 @@ class GuestHomeScreen extends StatefulWidget {
 class _GuestHomeScreenState extends State<GuestHomeScreen> {
   int _currentIndex = 0;
   final TextEditingController _searchController = TextEditingController();
-
-  final List<Widget> _screens = [
-    const HomeScreen(),
-    const BookingsScreen(),
-    const ProfileScreen(),
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -86,7 +79,7 @@ class _GuestHomeScreenState extends State<GuestHomeScreen> {
             TextButton(
               onPressed: () async {
                 Navigator.of(context).pop();
-                await AuthService().signOut();
+                context.read<AuthBloc>().add(const AuthSignOutRequested());
                 // Navigation will be handled by AuthWrapper
               },
               child: const Text(

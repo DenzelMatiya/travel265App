@@ -8,6 +8,7 @@
 
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:travel265/core/services/auth_service.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
@@ -696,7 +697,7 @@ class _AnimatedPropertyTypeState extends State<_AnimatedPropertyType>
             Icons.category_outlined,
             widget.primaryColor,
           ),
-          value: widget.selectedType,
+          initialValue: widget.selectedType,
           items: PropertyType.values.map((PropertyType type) {
             return DropdownMenuItem<PropertyType>(
               value: type,
@@ -853,7 +854,7 @@ class _AnimatedAmenitiesState extends State<_AnimatedAmenities>
                     ],
                   ),
                   selected: widget.selectedAmenities.contains(amenity.id),
-                  selectedColor: widget.primaryColor.withOpacity(0.2),
+                  selectedColor: widget.primaryColor.withValues(alpha: 0.2),
                   backgroundColor: widget.isDark ? Colors.grey[800] : Colors.grey[200],
                   checkmarkColor: widget.primaryColor,
                   onSelected: (selected) => widget.onAmenityToggle(amenity.id),

@@ -1,14 +1,12 @@
 //lib/features/booking/booking_form_screen
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:travel265/core/blocs/booking/booking_bloc.dart';
 import 'package:travel265/core/blocs/booking/booking_event.dart';
 import 'package:travel265/core/models/booking_model.dart';
 import 'package:travel265/core/models/property_model.dart';
-import 'package:travel265/core/theme/app_theme.dart';
-import 'package:travel265/core/utils/navigation_helper.dart';
 import 'package:uuid/uuid.dart';
+import 'package:travel265/core/blocs/auth/auth_state.dart';
 import 'package:travel265/core/services/auth_service.dart';
 
 class BookingFormScreen extends StatefulWidget {
@@ -39,7 +37,7 @@ class _BookingFormScreenState extends State<BookingFormScreen> {
       final booking = BookingModel(
         id: const Uuid().v4(),
         propertyId: widget.property.id,
-        guestId: AuthService.instance.currentUser!.id,
+        guestId: context.read<AuthBloc>().state.user!.id,
         checkIn: DateTime.parse(_checkInController.text),
         checkOut: DateTime.parse(_checkOutController.text),
         numberOfGuests: int.parse(_guestsController.text),

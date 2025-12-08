@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:travel265/models/property_models.dart'; // Import the supporting models
 
 class Property {

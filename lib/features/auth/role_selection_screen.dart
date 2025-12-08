@@ -1,14 +1,20 @@
-// lib/features/auth/role_selection_screen.dart - REFINED
+// lib/features/auth/role_selection_screen.dart - UPDATED
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:travel265/core/theme/app_theme.dart';
 import 'package:travel265/features/auth/host_login.dart';
 import 'package:travel265/features/auth/host_register.dart';
+import 'package:travel265/features/auth/guest_login_screen.dart';
 import 'package:travel265/features/home/guest_home_screen.dart';
 
-/// Screen for users to select their role (Guest, New Host, or Existing Host)
-/// This is the first screen after splash and determines the navigation flow.
+/// 🎯 Role Selection Screen - Entry point for all users
+///
+/// Options:
+/// 1. Continue as Guest (browse without login)
+/// 2. Guest Login (for booking)
+/// 3. Host Registration
+/// 4. Host Login
 class RoleSelectionScreen extends StatelessWidget {
   const RoleSelectionScreen({super.key});
 
@@ -24,16 +30,24 @@ class RoleSelectionScreen extends StatelessWidget {
         body: SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(24.0),
-            child: Column(
-              children: [
-                const Spacer(flex: 2),
-                const _WelcomeSection(),
-                const SizedBox(height: 40),
-                _buildGuestOption(context),
-                const SizedBox(height: 20),
-                _buildHostSection(context),
-                const Spacer(flex: 2),
-              ],
+            child: SingleChildScrollView(
+              physics: const ClampingScrollPhysics(),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const SizedBox(height: 48),
+                  const _WelcomeSection(),
+                  const SizedBox(height: 40),
+                  _buildBrowseAsGuestOption(context),
+                  const SizedBox(height: 16),
+                  _buildGuestLoginOption(context),
+                  const SizedBox(height: 32),
+                  _buildDivider(),
+                  const SizedBox(height: 32),
+                  _buildHostSection(context),
+                  const SizedBox(height: 48),
+                ],
+              ),
             ),
           ),
         ),
@@ -41,53 +55,83 @@ class RoleSelectionScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildGuestOption(BuildContext context) {
+  /// 👤 Browse without login (limited features)
+  Widget _buildBrowseAsGuestOption(BuildContext context) {
+    return _RoleCard(
+      icon: Icons.explore_outlined,
+      title: "Browse as Guest",
+      subtitle: "Explore stays without creating an account",
+      color: Colors.grey.shade700,
+      onTap: () => _handleSelection(context, RouteType.guestBrowse),
+      showBadge: true,
+      badgeText: "No Login Required",
+    );
+  }
+
+  /// 🔐 Guest login (for booking)
+  Widget _buildGuestLoginOption(BuildContext context) {
     return _RoleCard(
       icon: Icons.person_outline,
-      title: "Continue as Guest",
-      subtitle: "Browse and book unique stays across Malawi",
+      title: "Sign In to Book",
+      subtitle: "Login to make reservations and manage bookings",
       color: primaryColor,
-      onTap: () => _handleSelection(context, Role.guest),
+      onTap: () => _handleSelection(context, RouteType.guestLogin),
+    );
+  }
+
+  Widget _buildDivider() {
+    return Row(
+      children: [
+        const Expanded(child: Divider()),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Text(
+            'FOR HOSTS',
+            style: TextStyle(
+              color: Colors.grey.shade600,
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+            ),
+          ),
+        ),
+        const Expanded(child: Divider()),
+      ],
     );
   }
 
   Widget _buildHostSection(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Column(
       children: [
         Text(
-          "Hosting on TRAVEL 265",
-          style: theme.textTheme.headlineSmall?.copyWith(
+          "List Your Property",
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
             fontWeight: FontWeight.w700,
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 16),
         _RoleCard(
           icon: Icons.house_rounded,
-          title: "New Host? Create Listing",
-          subtitle: "Register and list your property in minutes",
+          title: "Become a Host",
+          subtitle: "Register and start earning from your property",
           color: Colors.green.shade700,
-          onTap: () => _handleSelection(context, Role.hostNew),
+          onTap: () => _handleSelection(context, RouteType.hostRegister),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 12),
         _RoleCard(
           icon: Icons.login_outlined,
-          title: "Existing Host? Access Account",
-          subtitle: "Log in with magic link to manage your listings",
+          title: "Host Login",
+          subtitle: "Access your host dashboard",
           color: Colors.orange.shade700,
-          onTap: () => _handleSelection(context, Role.hostExisting),
+          onTap: () => _handleSelection(context, RouteType.hostLogin),
         ),
       ],
     );
   }
 
-  Future<void> _handleSelection(BuildContext context, Role role) async {
+  Future<void> _handleSelection(BuildContext context, RouteType type) async {
     try {
-      // Add haptic feedback for better UX
       await HapticFeedback.lightImpact();
-
-      final route = _getRouteForRole(role);
+      final route = _getRouteForType(type);
       await Navigator.pushReplacement(
         context,
         PageRouteBuilder(
@@ -117,20 +161,21 @@ class RoleSelectionScreen extends StatelessWidget {
     );
   }
 
-  Widget _getRouteForRole(Role role) {
-    switch (role) {
-      case Role.guest:
-        return GuestHomeScreen();
-      case Role.hostNew:
-        return HostRegisterScreen();
-      case Role.hostExisting:
-        return HostLoginScreen();
+  Widget _getRouteForType(RouteType type) {
+    switch (type) {
+      case RouteType.guestBrowse:
+        return const GuestHomeScreen(); // Browse without auth
+      case RouteType.guestLogin:
+        return const GuestLoginScreen();
+      case RouteType.hostRegister:
+        return const HostRegisterScreen();
+      case RouteType.hostLogin:
+        return const HostLoginScreen();
     }
   }
 }
 
-/// User roles for navigation and access control
-enum Role { guest, hostNew, hostExisting }
+enum RouteType { guestBrowse, guestLogin, hostRegister, hostLogin }
 
 /// Welcome section with logo and introductory text
 class _WelcomeSection extends StatelessWidget {
@@ -155,7 +200,7 @@ class _WelcomeSection extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         Text(
-          "How would you like to use our platform?",
+          "Discover amazing stays across Malawi",
           textAlign: TextAlign.center,
           style: theme.textTheme.bodyLarge?.copyWith(
             color: isDark ? Colors.white70 : Colors.grey[600],
@@ -167,7 +212,6 @@ class _WelcomeSection extends StatelessWidget {
   }
 
   Widget _buildLogo(bool isDark) {
-    // TODO: Extract to core/widgets/brand_logo.dart for reuse across screens
     return Container(
       width: 120,
       height: 120,
@@ -199,13 +243,15 @@ class _WelcomeSection extends StatelessWidget {
   }
 }
 
-/// Unified role selection card with consistent styling
+/// Unified role selection card
 class _RoleCard extends StatelessWidget {
   final IconData icon;
   final String title;
   final String subtitle;
   final Color color;
   final VoidCallback onTap;
+  final bool showBadge;
+  final String? badgeText;
 
   const _RoleCard({
     required this.icon,
@@ -213,6 +259,8 @@ class _RoleCard extends StatelessWidget {
     required this.subtitle,
     required this.color,
     required this.onTap,
+    this.showBadge = false,
+    this.badgeText,
   });
 
   @override
@@ -268,12 +316,39 @@ class _RoleCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(
-            title,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-              color: isDark ? Colors.white : Colors.black87,
-            ),
+          Row(
+            children: [
+              Flexible(
+                child: Text(
+                  title,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? Colors.white : Colors.black87,
+                  ),
+                ),
+              ),
+              if (showBadge && badgeText != null) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade100,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    badgeText!,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green.shade800,
+                    ),
+                  ),
+                ),
+              ],
+            ],
           ),
           const SizedBox(height: 4),
           Text(
